@@ -105,7 +105,7 @@ class LineTracer(GlutViewController):
         super(LineTracer, self).__init__()
         self.texture = 0
         self.courseImage = 0
-        self.car = TraceCar(-64.0, 0.0)
+        self.car = TraceCar(-125.0, 0.0)
 
     def display(self, deltaTime):
         # self.drawAxis(10)
@@ -142,6 +142,12 @@ class LineTracer(GlutViewController):
         #         glPopMatrix()
         glPopMatrix()
 
+        sensorStirng = 'L: %.1f, C:%.1f, R: %.1f' % (
+            self.car.sensor2Color[0],
+            self.car.sensor1Color[0],
+            self.car.sensor3Color[0])
+        self.overlayString(sensorStirng, 2.0, 10.0)
+        self.overlayString('Press ESC key to Exit', 2.0, -8.0)
 
     def load(self):
         print "load...."
@@ -184,7 +190,7 @@ class LineTracer(GlutViewController):
         self.mouseState.y = y
 
     def drawCourse(self):
-        vx, vy = 128.0, 128.0
+        vx, vy = 256.0, 256.0
         tx, ty = 1, 1
         glBindTexture(GL_TEXTURE_2D, self.texture)
         glBegin(GL_POLYGON)
@@ -205,14 +211,18 @@ class LineTracer(GlutViewController):
         glBindTexture(GL_TEXTURE_2D, 0)
 
     def getSensor(self, pos):
-        imageX = float(pos[0] + 128) / 256.0 * self.courseImage.size[0]
-        imageY = -float(pos[1] - 128) / 256.0 * self.courseImage.size[1]
+        imageX = float(pos[0] + 256) / 512.0 * self.courseImage.size[0]
+        imageY = -float(pos[1] - 256) / 512.0 * self.courseImage.size[1]
         # print imageX, ppimageY
-        if imageY > 0:
-            rgb = self.courseImage.getpixel((imageX, imageY))
-            pixel = (float(rgb[0])/255.0,
-                     float(rgb[1])/255.0,
-                     float(rgb[2])/255.0)
+        if 0 < imageX < self.courseImage.size[1] and 0 < imageY < self.courseImage.size[1]:
+            rgb = [0.0, 0.0, 0.0]
+            for x in (-1, 0, 1):
+                for y in (-1, 0, 1):
+                    temp = self.courseImage.getpixel((imageX+x, imageY+y))
+                    rgb = [rgb[i] + temp[i]for i in range(len(rgb))]
+            pixel = (float(rgb[0])/9.0/255.0,
+                     float(rgb[1])/9.0/255.0,
+                     float(rgb[2])/9.0/255.0)
             return pixel
         else:
             return (0, 0, 0)
@@ -261,14 +271,23 @@ class LineTracer(GlutViewController):
         glPopMatrix()
 
     def controlProcess(self):
+        # if not hasattr(self, 'acc'):
+        #     self.acc = 0
         blightness = \
             0.299 * self.car.sensor1Color[0]\
             + 0.587 * self.car.sensor1Color[1]\
-            + 0.144 * self.car.sensor1Color[2]
-        if blightness > 0.9:
-            self.car.setAccelerator(10.0, 0.0)
-        else:
-            self.car.setAccelerator(0.0, 10.0)
+            + 0.114 * self.car.sensor1Color[2]
+        # ref = 0.4
+        # diff = ref - blightness
+        # self.acc += diff * 0.02
+        # out = diff * 0.2 + self.acc + 0.5
+        # print out, self.acc, diff
+        # self.car.setAccelerator(20.0*(1.0-out), 20.0*out)
+
+        # if blightness > 0.9:
+        #     self.car.setAccelerator(20.0, 0.0)
+        # else:
+        #     self.car.setAccelerator(0.0, 20.0)
 
 
 if __name__ == '__main__':
